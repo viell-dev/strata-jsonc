@@ -141,7 +141,7 @@ fn block_comments_do_not_nest() -> Result<(), JsoncError> {
 
     let error = lex_error("/* /* */ */ 1");
     assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-    assert_eq!(error.position.byte, 9);
+    assert_eq!(error.position.byte(), 9);
 
     Ok(())
 }
@@ -150,9 +150,9 @@ fn block_comments_do_not_nest() -> Result<(), JsoncError> {
 fn unterminated_block_comment_is_an_error_at_the_opener() {
     let error = lex_error("[1] /* open");
     assert!(matches!(error.kind, LexErrorKind::UnterminatedDelimiter));
-    assert_eq!(error.position.byte, 4);
-    assert_eq!(error.position.line, 1);
-    assert_eq!(error.position.column, 5);
+    assert_eq!(error.position.byte(), 4);
+    assert_eq!(error.position.line(), 1);
+    assert_eq!(error.position.column(), 5);
 }
 
 #[test]
@@ -160,11 +160,11 @@ fn hash_comments_are_rejected() {
     // "Single-line comments that start with `#` are not supported." A `#` is simply not a token.
     let error = lex_error("# note\n1");
     assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-    assert_eq!(error.position.byte, 0);
+    assert_eq!(error.position.byte(), 0);
 
     let error = lex_error("1 # note");
     assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-    assert_eq!(error.position.byte, 2);
+    assert_eq!(error.position.byte(), 2);
 }
 
 #[test]

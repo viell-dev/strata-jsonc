@@ -49,8 +49,8 @@ fn assert_reconstructs(input: &str, document: &Document) {
     // The retained spans are contiguous and gap-free from byte 0 to the end of input.
     let mut cursor = 0;
     for span in all_spans(document) {
-        assert_eq!(span.start, cursor, "gap or overlap at byte {cursor}");
-        cursor = span.end;
+        assert_eq!(span.start(), cursor, "gap or overlap at byte {cursor}");
+        cursor = span.end();
     }
     assert_eq!(cursor, u64::try_from(input.len()).unwrap_or(u64::MAX));
 }
@@ -98,7 +98,7 @@ fn comment_spans_and_positions_are_exact() -> Result<(), JsoncError> {
 
     let kinds: Vec<(TriviaKind, u64, u64)> = leading
         .iter()
-        .map(|trivia| (trivia.kind, trivia.span.start, trivia.span.end))
+        .map(|trivia| (trivia.kind, trivia.span.start(), trivia.span.end()))
         .collect();
     assert_eq!(
         kinds,
@@ -113,10 +113,10 @@ fn comment_spans_and_positions_are_exact() -> Result<(), JsoncError> {
     let Some(line_comment) = leading.get(2) else {
         panic!("expected four trivia pieces");
     };
-    assert_eq!(line_comment.start.line, 2);
-    assert_eq!(line_comment.start.column, 1);
-    assert_eq!(line_comment.end.line, 2);
-    assert_eq!(line_comment.end.column, 7);
+    assert_eq!(line_comment.start.line(), 2);
+    assert_eq!(line_comment.start.column(), 1);
+    assert_eq!(line_comment.end.line(), 2);
+    assert_eq!(line_comment.end.column(), 7);
 
     Ok(())
 }

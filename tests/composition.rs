@@ -43,7 +43,7 @@ impl Matcher for HashCommentRule {
 
             match bytes.get(len) {
                 Some(b'\n' | b'\r') | None => {
-                    return Ok(Some(Match::new(SuperToken::HashComment, len)));
+                    return Ok(Match::from_len(SuperToken::HashComment, len));
                 }
                 Some(_) => len = len.saturating_add(1),
             }
@@ -122,5 +122,5 @@ fn lifted_jsonc_rules_keep_their_validation() {
     let Err(error) = lex_kinds("/* open") else {
         panic!("expected the lifted block-comment rule to keep its termination check");
     };
-    assert_eq!(error.position.byte, 0);
+    assert_eq!(error.position.byte(), 0);
 }

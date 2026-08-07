@@ -105,7 +105,7 @@ fn lone_commas_stay_errors_even_when_tolerated() {
             matches!(error.kind, JsoncErrorKind::Expected { .. }),
             "input {input:?}"
         );
-        assert_eq!(error.position.byte, 1, "input {input:?}");
+        assert_eq!(error.position.byte(), 1, "input {input:?}");
     }
 }
 

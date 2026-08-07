@@ -127,31 +127,35 @@ pub fn strict_scanner() -> SpecScanner<StrictRuleSet, JsoncToken> {
 /// Advances `start` over `bytes`, mirroring the lexer's position rules (CR, LF, and CRLF each
 /// count as one line break).
 fn position_after(start: Position, bytes: &[u8]) -> Position {
-    let mut position = start;
+    let mut byte = start.byte();
+    let mut line = start.line();
+    let mut column = start.column();
     let mut previous_was_cr = false;
 
-    for &byte in bytes {
-        position.byte = position.byte.saturating_add(1);
+    for &b in bytes {
+        byte = byte.saturating_add(1);
 
-        match byte {
+        match b {
             b'\r' => {
-                position.line = position.line.saturating_add(1);
-                position.column = 1;
+                line = line.saturating_add(1);
+                column = 1;
                 previous_was_cr = true;
             }
             b'\n' if previous_was_cr => previous_was_cr = false,
             b'\n' => {
-                position.line = position.line.saturating_add(1);
-                position.column = 1;
+                line = line.saturating_add(1);
+                column = 1;
             }
             _ => {
-                position.column = position.column.saturating_add(1);
+                column = column.saturating_add(1);
                 previous_was_cr = false;
             }
         }
     }
 
-    position
+    // Line and column stay one-based above (they only grow or reset to 1), so construction
+    // cannot fail; the fallback is unreachable.
+    Position::new(byte, line, column).unwrap_or(start)
 }
 
 /// Validates that the measured comment is valid UTF-8 and produces the match.
@@ -168,7 +172,7 @@ fn finish_comment(
     let raw = look.peek(len)?;
 
     match core::str::from_utf8(raw) {
-        Ok(_) => Ok(Some(Match::new(kind, len))),
+        Ok(_) => Ok(Match::from_len(kind, len)),
         Err(error) => {
             let valid = raw.get(..error.valid_up_to()).unwrap_or(raw);
             Err(LexError::unrecognized(position_after(start, valid)))
@@ -263,7 +267,7 @@ mod tests {
         loop {
             let token = lexer.next_token()?;
             let done = token.kind == JsoncToken::Eof;
-            out.push((token.kind, token.span.start, token.span.end));
+            out.push((token.kind, token.span().start(), token.span().end()));
 
             if done {
                 break;
@@ -394,7 +398,7 @@ mod tests {
     fn unterminated_block_comment_is_reported_at_the_opener() {
         let error = lex_error("1 /* open");
         assert!(matches!(error.kind, LexErrorKind::UnterminatedDelimiter));
-        assert_eq!(error.position.byte, 2);
+        assert_eq!(error.position.byte(), 2);
     }
 
     #[test]
@@ -402,21 +406,21 @@ mod tests {
         // `/*/` cannot close with the opener's own `*`.
         let error = lex_error("/*/");
         assert!(matches!(error.kind, LexErrorKind::UnterminatedDelimiter));
-        assert_eq!(error.position.byte, 0);
+        assert_eq!(error.position.byte(), 0);
     }
 
     #[test]
     fn hash_is_not_a_comment() {
         let error = lex_error("# note");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 0);
+        assert_eq!(error.position.byte(), 0);
     }
 
     #[test]
     fn lone_slash_is_unrecognized() {
         let error = lex_error("/ 1");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 0);
+        assert_eq!(error.position.byte(), 0);
     }
 
     #[test]
@@ -447,16 +451,16 @@ mod tests {
             panic!("expected a lexical error");
         };
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 3);
+        assert_eq!(error.position.byte(), 3);
 
         // Bytes: 0 `/`, 1 `*`, 2 `\n`, 3 0xFF ... — the offending byte sits on line 2.
         let Err(error) = lex_bytes(b"/*\n\xFF*/") else {
             panic!("expected a lexical error");
         };
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 3);
-        assert_eq!(error.position.line, 2);
-        assert_eq!(error.position.column, 1);
+        assert_eq!(error.position.byte(), 3);
+        assert_eq!(error.position.line(), 2);
+        assert_eq!(error.position.column(), 1);
     }
 
     #[test]
@@ -475,7 +479,7 @@ mod tests {
     fn reused_json_rules_keep_their_validation() {
         let error = lex_error("01");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 1);
+        assert_eq!(error.position.byte(), 1);
     }
 
     #[test]
@@ -501,14 +505,10 @@ mod tests {
 
     #[test]
     fn position_after_walks_crlf_as_one_break() {
-        let start = Position {
-            byte: 0,
-            line: 1,
-            column: 1,
-        };
+        let start = Position::START;
         let end = position_after(start, b"a\r\nb");
-        assert_eq!(end.byte, 4);
-        assert_eq!(end.line, 2);
-        assert_eq!(end.column, 2);
+        assert_eq!(end.byte(), 4);
+        assert_eq!(end.line(), 2);
+        assert_eq!(end.column(), 2);
     }
 }

@@ -36,7 +36,7 @@ fn single_quoted_strings_are_rejected() {
         panic!("expected a lexical error");
     };
     assert!(matches!(lex.kind, LexErrorKind::Unrecognized));
-    assert_eq!(lex.position.byte, 0);
+    assert_eq!(lex.position.byte(), 0);
 }
 
 #[test]
@@ -77,7 +77,7 @@ fn trailing_content_is_rejected_but_trailing_comments_are_not() {
 fn bom_is_rejected_by_default_and_retained_when_allowed() -> Result<(), JsoncError> {
     let error = parse_error("\u{FEFF}// c\n1");
     assert!(matches!(error.kind, JsoncErrorKind::UnexpectedBom));
-    assert_eq!(error.position.byte, 0);
+    assert_eq!(error.position.byte(), 0);
 
     let document = JsoncParser::builder()
         .allow_bom(true)
@@ -87,7 +87,7 @@ fn bom_is_rejected_by_default_and_retained_when_allowed() -> Result<(), JsoncErr
         panic!("expected the BOM to be retained as trivia");
     };
     assert_eq!(bom.kind, TriviaKind::Bom);
-    assert_eq!(bom.span.end, 3);
+    assert_eq!(bom.span.end(), 3);
 
     Ok(())
 }
@@ -114,9 +114,9 @@ fn depth_limit_is_enforced() {
 fn error_positions_carry_line_column_and_byte() {
     // The offending `}` sits on line 3 after a comment line.
     let error = parse_error("[\n// c\n}");
-    assert_eq!(error.position.line, 3);
-    assert_eq!(error.position.column, 1);
-    assert_eq!(error.position.byte, 7);
+    assert_eq!(error.position.line(), 3);
+    assert_eq!(error.position.column(), 1);
+    assert_eq!(error.position.byte(), 7);
 }
 
 #[test]

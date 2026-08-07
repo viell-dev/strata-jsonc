@@ -107,7 +107,9 @@ impl fmt::Display for JsoncError {
             kind => write!(
                 formatter,
                 "{kind} at line {}, column {} (byte {})",
-                self.position.line, self.position.column, self.position.byte
+                self.position.line(),
+                self.position.column(),
+                self.position.byte()
             ),
         }
     }
@@ -390,7 +392,7 @@ impl<R: Read, M: MatcherSet<Kind = JsoncToken>> Driver<R, M> {
                         self.push_trivia(TriviaKind::Bom, &token);
                     } else {
                         return Err(JsoncError {
-                            position: token.start,
+                            position: token.start(),
                             kind: JsoncErrorKind::UnexpectedBom,
                         });
                     }
@@ -409,9 +411,9 @@ impl<R: Read, M: MatcherSet<Kind = JsoncToken>> Driver<R, M> {
     fn significant(&mut self, kind: JsonToken, token: &Token<JsoncToken>) -> SyntaxToken {
         SyntaxToken {
             kind,
-            span: token.span,
-            start: token.start,
-            end: token.end,
+            span: token.span(),
+            start: token.start(),
+            end: token.end(),
             leading: std::mem::take(&mut self.pending),
         }
     }
@@ -431,9 +433,9 @@ impl<R: Read, M: MatcherSet<Kind = JsoncToken>> Driver<R, M> {
     fn push_trivia(&mut self, kind: TriviaKind, token: &Token<JsoncToken>) {
         self.pending.push(Trivia {
             kind,
-            span: token.span,
-            start: token.start,
-            end: token.end,
+            span: token.span(),
+            start: token.start(),
+            end: token.end(),
         });
     }
 
@@ -749,6 +751,6 @@ mod tests {
         let Err(error) = JsoncParser::new().parse_str("/* a\nb */ [1 2]") else {
             panic!("expected a parse error");
         };
-        assert_eq!(error.position.line, 2);
+        assert_eq!(error.position.line(), 2);
     }
 }
