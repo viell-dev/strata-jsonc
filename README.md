@@ -9,6 +9,47 @@ and trivia, with comments surfaced on the model), built on `strata-jsonc-parser`
 
 This crate is in initial development. The public API is not settled yet.
 
+## Usage
+
+```rust
+use strata_jsonc::{JsoncError, JsoncNumber, JsoncResolver};
+
+fn main() -> Result<(), JsoncError> {
+    let resolver = JsoncResolver::builder().allow_trailing_commas(true).build();
+    let document = resolver.resolve_str(
+        "{\n  // the crate name\n  \"name\": \"caf\\u00e9\",\n  \"count\": 3,\n}",
+    )?;
+
+    let Some(object) = document.root().as_object() else {
+        panic!("expected an object root");
+    };
+
+    // Owned, decoded values...
+    assert_eq!(object.get("name").and_then(|v| v.as_str()), Some("café"));
+    assert_eq!(
+        object.get("count").and_then(|v| v.as_number()),
+        Some(JsoncNumber::U64(3))
+    );
+
+    // ...with the comments surfaced on the model.
+    let [name] = &object.get_all("name").collect::<Vec<_>>()[..] else {
+        panic!("expected one \"name\" member");
+    };
+    let Some(comment) = name.name_meta().comments().next() else {
+        panic!("expected the leading comment");
+    };
+    assert_eq!(
+        document.comment_text(comment).as_deref(),
+        Some(" the crate name")
+    );
+
+    Ok(())
+}
+```
+
+See [docs/strata-jsonc.md](docs/strata-jsonc.md) for the design reference, including the
+comment ergonomics and the duplicate-member and lone-surrogate policies.
+
 ## Minimum Supported Rust Version
 
 The MSRV is **1.87.0**.
