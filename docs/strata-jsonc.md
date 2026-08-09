@@ -24,7 +24,7 @@ strata-jsonc-rules -> strata-jsonc-parser -> strata-jsonc (this crate)
 | Module     | Public items |
 |------------|--------------|
 | `resolve`  | `JsoncResolver<M>`, `JsoncResolverBuilder<M>`, `DuplicateKeys` |
-| `value`    | `JsoncValue`, `JsoncArray`, `JsoncObject`, `JsoncMember`, `JsoncNumber`, `Meta` |
+| `value`    | `JsoncValue`, `JsoncArray`, `JsoncObject`, `JsoncMember`, `JsoncNumber`, `NumberFormat`, `Meta` |
 | `document` | `JsoncDocument` |
 | `error`    | `JsoncError`, `JsoncErrorKind` |
 
@@ -50,11 +50,11 @@ source must still back the tree — a reclaimed store yields `SourceUnavailable`
 
 ## 3. The model (`value`, `document`)
 
-- `JsoncValue` — `Null(Meta)`, `Bool(bool, Meta)`, `Number(JsoncNumber, Meta)`,
+- `JsoncValue` — `Null(Meta)`, `Bool(bool, Meta)`, `Number(JsoncNumber, NumberFormat, Meta)`,
   `String(String, Meta)`, `Array(JsoncArray)`, `Object(JsoncObject)`, with `meta()`, `span()`,
   and `as_*`/`is_*` accessors. `JsoncNumber` is the parser `decode::Number` re-exported: `U64`
   for non-negative integers that fit, `I64` for negative, `F64` otherwise (`-0` keeps its sign;
-  oversized integers round with the raw text still reachable for arbitrary precision).
+  oversized integers round with the raw text still reachable for arbitrary precision). The written form rides along as a `NumberFormat` (`Integer`, `Decimal`, `Exponential`) exposed by `JsoncValue::number_format()`.
 - `Meta` — per-node fidelity: lexeme span (containers cover open through close), start/end
   positions, and the leading trivia (whitespace runs with `line_breaks()`/`blank_lines()`, a
   tolerated BOM, and comments). Metas are only created by resolution, so they always describe
