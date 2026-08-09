@@ -2,6 +2,7 @@
 
 use strata_jsonc::{
     JsoncError, JsoncErrorKind, JsoncNumber, JsoncResolver, JsoncValue, LoneSurrogates,
+    NumberFormat,
 };
 
 fn root(input: &str) -> Result<JsoncValue, JsoncError> {
@@ -170,4 +171,17 @@ fn parse_errors_pass_through() {
 
     assert!(matches!(error.kind, JsoncErrorKind::Parse(_)));
     assert!(error.to_string().contains("expected ',' or ']'"));
+}
+
+#[test]
+fn number_formats_surface_the_written_form() -> Result<(), JsoncError> {
+    assert_eq!(root("42")?.number_format(), Some(NumberFormat::Integer));
+    assert_eq!(root("-0.5")?.number_format(), Some(NumberFormat::Decimal));
+    assert_eq!(
+        root("1.23e+5")?.number_format(),
+        Some(NumberFormat::Exponential)
+    );
+    assert_eq!(root("true")?.number_format(), None);
+
+    Ok(())
 }

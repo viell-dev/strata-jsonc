@@ -4,6 +4,7 @@ use strata_jsonc_parser::Trivia;
 use strata_lexer::{Position, Span};
 
 pub use strata_jsonc_parser::decode::Number as JsoncNumber;
+pub use strata_jsonc_parser::decode::NumberFormat;
 
 /// Per-node source fidelity: where the node sits and what preceded it.
 ///
@@ -82,8 +83,8 @@ pub enum JsoncValue {
     Null(Meta),
     /// A `true` or `false` literal.
     Bool(bool, Meta),
-    /// A number, converted integer-preserving.
-    Number(JsoncNumber, Meta),
+    /// A number, converted integer-preserving, with the written form it came from.
+    Number(JsoncNumber, NumberFormat, Meta),
     /// A string, unescaped.
     String(String, Meta),
     /// An array.
@@ -99,7 +100,7 @@ impl JsoncValue {
         match self {
             Self::Null(meta)
             | Self::Bool(_, meta)
-            | Self::Number(_, meta)
+            | Self::Number(_, _, meta)
             | Self::String(_, meta) => meta,
             Self::Array(array) => array.meta(),
             Self::Object(object) => object.meta(),
@@ -131,7 +132,19 @@ impl JsoncValue {
     #[must_use]
     pub const fn as_number(&self) -> Option<JsoncNumber> {
         match self {
-            Self::Number(value, _) => Some(*value),
+            Self::Number(value, _, _) => Some(*value),
+            _ => None,
+        }
+    }
+
+    /// The written form of the number, if this is a number.
+    ///
+    /// Author-intent fidelity: `1.23e+5` reports [`NumberFormat::Exponential`] even though the
+    /// converted value is a plain float; the raw text stays reachable through the node's span.
+    #[must_use]
+    pub const fn number_format(&self) -> Option<NumberFormat> {
+        match self {
+            Self::Number(_, format, _) => Some(*format),
             _ => None,
         }
     }

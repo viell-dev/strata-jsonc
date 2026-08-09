@@ -29,7 +29,9 @@ pub use error::{JsoncError, JsoncErrorKind};
 pub use resolve::{DuplicateKeys, JsoncResolver, JsoncResolverBuilder};
 pub use strata_jsonc_parser::decode::LoneSurrogates;
 pub use strata_jsonc_parser::{Trivia, TriviaKind};
-pub use value::{JsoncArray, JsoncMember, JsoncNumber, JsoncObject, JsoncValue, Meta};
+pub use value::{
+    JsoncArray, JsoncMember, JsoncNumber, JsoncObject, JsoncValue, Meta, NumberFormat,
+};
 
 /// Compile-checks the README examples alongside the doctests.
 #[cfg(doctest)]
